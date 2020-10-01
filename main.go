@@ -53,6 +53,7 @@ func (p DockerAuthZPlugin) AuthZReq(r authorization.Request) authorization.Respo
 		return authorization.Response{Allow: true}
 	} else if err != nil {
 		if p.debug {
+			log.Printf("Returning PDP decision: %v (error: %v)", true, err)
 			return authorization.Response{Allow: true}
 		}
 		return authorization.Response{Err: err.Error()}
