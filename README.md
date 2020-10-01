@@ -14,7 +14,7 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 ```json
 {
-  "pdp_addr": "http://localhost:9000/data/policy/n506c5e8ac58e4ac9bd7145f2184ffffc",
+  "pdp_addr": "http://localhost:9000/data/policy/docker.authz",
   "allow_on_failure": false
 }
 ```

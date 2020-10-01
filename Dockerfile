@@ -1,6 +1,6 @@
 FROM scratch
 
-LABEL maintainer="Kfir Peled <kfir@build.security>"
+LABEL maintainer="Build Security <community@build.security>"
 
 COPY pdp-docker-authz /pdp-docker-authz
 

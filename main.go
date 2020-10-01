@@ -143,7 +143,7 @@ func (p DockerAuthZPlugin) evaluate(_ context.Context, r authorization.Request) 
 
 	if err != nil {
 		i, _ := json.Marshal(input)
-		log.Printf("Returning PDP decision: %v (error: %v; input: %v)", allowed, err, i)
+		log.Printf("Returning PDP decision: %v (error: %v; input: %v)", allowed, err, string(i))
 	} else {
 		log.Printf("Returning PDP decision: %v", allowed)
 		dl, _ := json.Marshal(decisionLog)
