@@ -62,21 +62,15 @@ docker_plugin_install() {
 }
 
 docker_plugin_config() {
-    if [[ ! -f "$dockerd_config" ]]; then
-        cat <<EOF > "$dockerd_config"
-{
-}
-EOF
-    fi
+    write_file $dockerd_config "{}"
+
     json_config=$(jq '."authorization-plugins" += ["buildsecurity/pdp-docker-authz:v0.1"]' $dockerd_config)
 
     if [ $? -ne 0 ]; then
         abort "jq failure"
     fi
 
-    cat <<EOF > "$dockerd_config"
-$json_config
-EOF
+    write_file $dockerd_config "$json_config"
 }
 
 docker_plugin_uninstall() {
@@ -92,9 +86,7 @@ docker_plugin_remove_config() {
         abort "jq failure"
     fi
 
-    cat <<EOF > "$dockerd_config"
-$json_config
-EOF
+    write_file $dockerd_config "$json_config"
 }
 
 docker_config_restart() {
@@ -125,6 +117,12 @@ have_sudo_access() {
   fi
 
   return "$HAVE_SUDO_ACCESS"
+}
+
+write_file() {
+  cat <<EOF > "$1"
+$2
+EOF
 }
 
 shell_join() {
