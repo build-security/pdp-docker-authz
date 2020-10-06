@@ -27,6 +27,9 @@ debug="false"
 config="/pdp/pdp_config.json"
 dockerd_config="/etc/docker/daemon.json"
 
+# TODO: check jq is installed
+# TODO: support osx
+
 usage()
 {
     echo "usage: install.sh [[-d] | [-h]]"
@@ -75,8 +78,9 @@ EOF
 }
 
 docker_plugin_uninstall() {
-    execute "docker" "plugin" "rm" "-f" "buildsecurity/pdp-docker-authz:v0.1"
     docker_plugin_remove_config
+    docker_config_restart
+    execute "docker" "plugin" "rm" "-f" "buildsecurity/pdp-docker-authz:v0.1"
 }
 
 docker_plugin_remove_config() {
