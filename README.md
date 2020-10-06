@@ -6,7 +6,7 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 ## Usage
 
-###1. Setup configuration, policy decision point address. 
+### 1. Setup configuration, policy decision point address. 
 
 `mkdir -p /etc/docker`
 
@@ -18,7 +18,7 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
   "allow_on_failure": false
 }
 ```
-###2. Install the pdp-docker-authz plugin.
+### 2. Install the pdp-docker-authz plugin.
 
 `docker plugin install buildsecurity/pdp-docker-authz:v0.1 pdp-args="-config-file /pdp/pdp_config.json -debug false"`
 
