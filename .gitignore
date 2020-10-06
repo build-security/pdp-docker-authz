@@ -1,0 +1,6 @@
+# Development environments
+/.vscode
+/.idea
+
+# Build output
+/pdp-docker-authz

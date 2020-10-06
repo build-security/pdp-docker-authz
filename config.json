@@ -1,0 +1,45 @@
+{
+  "description": "A remote policy decision point-authorization plugin for Docker",
+  "documentation": "https://github.com/build-security/pdp-docker-authz",
+  "entrypoint": [
+    "/pdp-docker-authz"
+  ],
+  "args": {
+    "name": "pdp-args",
+    "description": "Configuration for pdp-docker-authz",
+    "settable": [
+      "value"
+    ],
+    "value": [
+      "-config-file",
+      "~/.pdp/config.json",
+      "-debug",
+      "false"
+    ]
+  },
+  "network": {
+    "type": "host"
+  },
+  "interface": {
+    "socket": "pdp-docker-authz.sock",
+    "types": [
+      "docker.authz/1.0"
+    ]
+  },
+  "mounts": [
+    {
+      "name": "policy",
+      "source": "/etc/docker",
+      "destination": "/pdp",
+      "type": "none",
+      "options": [
+        "bind",
+        "ro"
+      ],
+      "settable": [
+        "source"
+      ]
+    }
+  ],
+  "workdir": "/pdp"
+}
