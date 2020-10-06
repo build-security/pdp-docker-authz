@@ -58,7 +58,7 @@ docker_plugin_install() {
 
 docker_plugin_config() {
     if [[ ! -f "$dockerd_config" ]]; then
-        cat <<EOF > "$dockerd_config"
+        /usr/bin/sudo cat <<EOF > "$dockerd_config"
 {
 }
 EOF
@@ -69,7 +69,7 @@ EOF
         abort "jq failure"
     fi
 
-    cat <<EOF > "$dockerd_config"
+    /usr/bin/sudo cat <<EOF > "$dockerd_config"
 $json_config
 EOF
 }
@@ -86,7 +86,7 @@ docker_plugin_remove_config() {
         abort "jq failure"
     fi
 
-    cat <<EOF > "$dockerd_config"
+    /usr/bin/sudo cat <<EOF > "$dockerd_config"
 $json_config
 EOF
 }
@@ -114,7 +114,7 @@ have_sudo_access() {
     HAVE_SUDO_ACCESS="$?"
   fi
 
-  if [[ -z "${HOMEBREW_ON_LINUX-}" ]] && [[ "$HAVE_SUDO_ACCESS" -ne 0 ]]; then
+  if [[ -z "${ON_LINUX-}" ]] && [[ "$HAVE_SUDO_ACCESS" -ne 0 ]]; then
     abort "Need sudo access on macOS (e.g. the user $USER to be an Administrator)!"
   fi
 
@@ -153,15 +153,6 @@ execute() {
   if ! "$@"; then
     abort "$(printf "Failed during: %s" "$(shell_join "$@")")"
   fi
-}
-
-execute2 () { 
-    # eval "$1"
-    error=$($1 2>&1 >/dev/null)
-
-    if [ $? -ne 0 ]; then
-        abort "Failed during: $1 - $error"
-    fi
 }
 
 execute_sudo() {
