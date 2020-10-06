@@ -54,7 +54,7 @@ while [ $# -ge 1 ] && [ "$1" != "" ]; do
 done
 
 docker_plugin_install() {
-    execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=\"-config-file ${config} -debug ${debug}\""
+    execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${config} -debug ${debug}"
     docker_plugin_config
     docker_config_restart
 }
