@@ -58,7 +58,7 @@ docker_plugin_install() {
 
 docker_plugin_config() {
     if [[ ! -f "$dockerd_config" ]]; then
-        /usr/bin/sudo cat <<EOF > "$dockerd_config"
+        cat <<EOF > "$dockerd_config"
 {
 }
 EOF
@@ -69,7 +69,7 @@ EOF
         abort "jq failure"
     fi
 
-    /usr/bin/sudo cat <<EOF > "$dockerd_config"
+    cat <<EOF > "$dockerd_config"
 $json_config
 EOF
 }
@@ -86,7 +86,7 @@ docker_plugin_remove_config() {
         abort "jq failure"
     fi
 
-    /usr/bin/sudo cat <<EOF > "$dockerd_config"
+    cat <<EOF > "$dockerd_config"
 $json_config
 EOF
 }
@@ -189,7 +189,7 @@ wait_for_user() {
 }
 
 if [ $action == "install" ]; then
-    docker_plugin_config
+    docker_plugin_install
 elif [ $action == "uninstall" ]; then
     docker_plugin_uninstall
 fi
