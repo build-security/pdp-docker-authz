@@ -29,6 +29,8 @@ dockerd_config="/etc/docker/daemon.json"
 
 # TODO: check jq is installed
 # TODO: support osx
+# TODO: add pdp_config json with pdp_addr
+# TODO: add timeout for pdp request in docker plugin
 
 usage()
 {

@@ -9,7 +9,7 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 ### Quick install
 
 ```shell script
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)"
+sudo /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/feature/bs-1223-install-script/install.sh?token=AOWMO44TLSBXAUL2XL2LTEK7QXUP2)"
 ```
 
 ### 1. Setup configuration, policy decision point address. 
