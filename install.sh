@@ -23,78 +23,93 @@ fi
 
 json_config=
 action="install"
+pdp_addr=
 debug="false"
-config="/pdp/pdp_config.json"
+config="pdp_config.json"
 dockerd_config="/etc/docker/daemon.json"
 
-# TODO: check jq is installed
 # TODO: support osx
-# TODO: add pdp_config json with pdp_addr
-# TODO: add timeout for pdp request in docker plugin
 
 usage()
 {
-    echo "usage: install.sh [[-d] | [-h]]"
+  echo "usage: install.sh [-d] [-c] [-p] [-u] [-h]"
 }
 
 while [ $# -ge 1 ] && [ "$1" != "" ]; do
-    case $1 in
-        -c | --config )         shift
-                                config=$1
-                                ;;
-        -u | --uninstall )      action="uninstall"
-                                ;;
-        -d | --debug )          debug="true"
-                                ;;
-        -h | --help )           usage
-                                exit
-                                ;;
-        * )                     usage
-                                exit 1
-    esac
-    shift
+  case $1 in
+    -p | --pdp-addr )       shift
+                            pdp_addr=$1
+                            ;;
+    -c | --config )         shift
+                            config=$1
+                            ;;
+    -u | --uninstall )      action="uninstall"
+                            ;;
+    -d | --debug )          debug="true"
+                            ;;
+    -h | --help )           usage
+                            exit
+                            ;;
+    * )                     usage
+                            exit 1
+  esac
+  shift
 done
 
 docker_plugin_install() {
-    execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${config} -debug ${debug}"
-    docker_plugin_config
-    docker_config_restart
+  pdp_config
+  execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${config} -debug ${debug}"
+  docker_plugin_config
+  docker_config_restart
+}
+
+pdp_config() {
+  if [[ ! -f "$config" ]]; then
+    write_file $config "{}"
+  fi
+
+  if [[ -z pdp_addr ]]; then
+    json_config=$(jq ".\"pdp_addr\" = \"$pdp_addr\"" /etc/docker/$config)
+    write_file /etc/docker/$config "$json_config"
+  fi
 }
 
 docker_plugin_config() {
+  if [[ ! -f "$dockerd_config" ]]; then
     write_file $dockerd_config "{}"
+  fi
 
-    json_config=$(jq '."authorization-plugins" += ["buildsecurity/pdp-docker-authz:v0.1"]' $dockerd_config)
+  json_config=$(jq '."authorization-plugins" += ["buildsecurity/pdp-docker-authz:v0.1"]' $dockerd_config)
 
-    if [ $? -ne 0 ]; then
-        abort "jq failure"
-    fi
+  if [ $? -ne 0 ]; then
+    abort "jq failure"
+  fi
 
-    write_file $dockerd_config "$json_config"
+  write_file $dockerd_config "$json_config"
 }
 
 docker_plugin_uninstall() {
-    docker_plugin_remove_config
-    docker_config_restart
-    execute "docker" "plugin" "rm" "-f" "buildsecurity/pdp-docker-authz:v0.1"
+  docker_plugin_remove_config
+  docker_config_restart
+  execute "docker" "plugin" "rm" "-f" "buildsecurity/pdp-docker-authz:v0.1"
 }
 
 docker_plugin_remove_config() {
-    json_config=$(jq 'del(."authorization-plugins"[] | select(. == "buildsecurity/pdp-docker-authz:v0.1"))' $dockerd_config)
+  json_config=$(jq 'del(."authorization-plugins"[] | select(. == "buildsecurity/pdp-docker-authz:v0.1"))' $dockerd_config)
 
-    if [ $? -ne 0 ]; then
-        abort "jq failure"
-    fi
+  if [ $? -ne 0 ]; then
+    abort "jq failure"
+  fi
 
-    write_file $dockerd_config "$json_config"
+  write_file $dockerd_config "$json_config"
 }
 
 docker_config_restart() {
-    if [[ -z "${ON_LINUX-}" ]]; then
-        abort "Please restart your docker daemon"
-    else
-        execute "kill" "-HUP" "$(pidof dockerd)"
-    fi
+  if [[ -z "${ON_LINUX-}" ]]; then
+      abort "Please restart your docker daemon"
+  else
+      execute_sudo "kill" "-HUP" "$(pidof dockerd)"
+  fi
 }
 
 have_sudo_access() {
@@ -122,7 +137,7 @@ have_sudo_access() {
 write_file() {
   data=$2
   # TODO: @Q is supproted from bash 4 - on osx the bash version is too old
-  execute_sudo "echo" "${data@Q}" "|" "tee" "$1"
+  execute_sudo "bash" "-c" "echo ${data@Q} | tee $1"
 }
 
 # string formatters
@@ -207,8 +222,12 @@ wait_for_user() {
 
 have_sudo_access
 
+if ! [ -x "$(command -v jq)" ]; then
+  abort "Please install jq first"
+fi
+
 if [ $action == "install" ]; then
-    docker_plugin_install
+  docker_plugin_install
 elif [ $action == "uninstall" ]; then
-    docker_plugin_uninstall
+  docker_plugin_uninstall
 fi
