@@ -26,6 +26,7 @@ action="install"
 pdp_addr=
 debug="false"
 config="pdp_config.json"
+local_config="/etc/docker/$config"
 dockerd_config="/etc/docker/daemon.json"
 
 # TODO: support osx
@@ -64,13 +65,13 @@ docker_plugin_install() {
 }
 
 pdp_config() {
-  if [[ ! -f "$config" ]]; then
-    write_file $config "{}"
+  if [[ ! -f "$local_config" ]]; then
+    write_file $local_config "{}"
   fi
 
-  if [[ -z pdp_addr ]]; then
-    json_config=$(jq ".\"pdp_addr\" = \"$pdp_addr\"" /etc/docker/$config)
-    write_file /etc/docker/$config "$json_config"
+  if [[ ! -z "$pdp_addr" ]]; then
+    json_config=$(jq ".\"pdp_addr\" = \"$pdp_addr\"" $local_config)
+    write_file $local_config "$json_config"
   fi
 }
 
