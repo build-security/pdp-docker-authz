@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 set -u
 
@@ -120,10 +120,23 @@ have_sudo_access() {
 }
 
 write_file() {
-  cat <<EOF > "$1"
-$2
-EOF
+  data=$2
+  # TODO: @Q is supproted from bash 4 - on osx the bash version is too old
+  execute_sudo "echo" "${data@Q}" "|" "tee" "$1"
 }
+
+# string formatters
+if [[ -t 1 ]]; then
+  tty_escape() { printf "\033[%sm" "$1"; }
+else
+  tty_escape() { :; }
+fi
+tty_mkbold() { tty_escape "1;$1"; }
+tty_underline="$(tty_escape "4;39")"
+tty_blue="$(tty_mkbold 34)"
+tty_red="$(tty_mkbold 31)"
+tty_bold="$(tty_mkbold 39)"
+tty_reset="$(tty_escape 0)"
 
 shell_join() {
   local arg
