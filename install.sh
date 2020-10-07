@@ -21,13 +21,13 @@ else
   TOUCH="/bin/touch"
 fi
 
-json_config=
-action="install"
-pdp_addr=
-debug="false"
-config="pdp_config.json"
-local_config="/etc/docker/$config"
-dockerd_config="/etc/docker/daemon.json"
+JSON_CONFIG=
+ACTION="install"
+PDP_ADDR=
+DEBUG="false"
+CONFIG="pdp_config.json"
+LOCAL_CONFIG="/etc/docker/$CONFIG"
+DOCKERD_CONFIG="/etc/docker/daemon.json"
 
 # TODO: support osx
 
@@ -39,14 +39,14 @@ usage()
 while [ $# -ge 1 ] && [ "$1" != "" ]; do
   case $1 in
     -p | --pdp-addr )       shift
-                            pdp_addr=$1
+                            PDP_ADDR=$1
                             ;;
     -c | --config )         shift
-                            config=$1
+                            CONFIG=$1
                             ;;
-    -u | --uninstall )      action="uninstall"
+    -u | --uninstall )      ACTION="uninstall"
                             ;;
-    -d | --debug )          debug="true"
+    -d | --debug )          DEBUG="true"
                             ;;
     -h | --help )           usage
                             exit
@@ -59,34 +59,34 @@ done
 
 docker_plugin_install() {
   pdp_config
-  execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${config} -debug ${debug}"
+  execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${CONFIG} -debug ${DEBUG}"
   docker_plugin_config
   docker_config_restart
 }
 
 pdp_config() {
-  if [[ ! -f "$local_config" ]]; then
-    write_file $local_config "{}"
+  if [[ ! -f "$LOCAL_CONFIG" ]]; then
+    write_file $LOCAL_CONFIG "{}"
   fi
 
-  if [[ ! -z "$pdp_addr" ]]; then
-    json_config=$(jq ".\"pdp_addr\" = \"$pdp_addr\"" $local_config)
-    write_file $local_config "$json_config"
+  if [[ ! -z "$PDP_ADDR" ]]; then
+    JSON_CONFIG=$(jq ".\"pdp_addr\" = \"$PDP_ADDR\"" $LOCAL_CONFIG)
+    write_file $LOCAL_CONFIG "$JSON_CONFIG"
   fi
 }
 
 docker_plugin_config() {
-  if [[ ! -f "$dockerd_config" ]]; then
-    write_file $dockerd_config "{}"
+  if [[ ! -f "$DOCKERD_CONFIG" ]]; then
+    write_file $DOCKERD_CONFIG "{}"
   fi
 
-  json_config=$(jq '."authorization-plugins" += ["buildsecurity/pdp-docker-authz:v0.1"]' $dockerd_config)
+  JSON_CONFIG=$(jq '."authorization-plugins" += ["buildsecurity/pdp-docker-authz:v0.1"]' $DOCKERD_CONFIG)
 
   if [ $? -ne 0 ]; then
     abort "jq failure"
   fi
 
-  write_file $dockerd_config "$json_config"
+  write_file $DOCKERD_CONFIG "$JSON_CONFIG"
 }
 
 docker_plugin_uninstall() {
@@ -96,13 +96,13 @@ docker_plugin_uninstall() {
 }
 
 docker_plugin_remove_config() {
-  json_config=$(jq 'del(."authorization-plugins"[] | select(. == "buildsecurity/pdp-docker-authz:v0.1"))' $dockerd_config)
+  JSON_CONFIG=$(jq 'del(."authorization-plugins"[] | select(. == "buildsecurity/pdp-docker-authz:v0.1"))' $DOCKERD_CONFIG)
 
   if [ $? -ne 0 ]; then
     abort "jq failure"
   fi
 
-  write_file $dockerd_config "$json_config"
+  write_file $DOCKERD_CONFIG "$JSON_CONFIG"
 }
 
 docker_config_restart() {
@@ -136,9 +136,9 @@ have_sudo_access() {
 }
 
 write_file() {
-  data=$2
+  DATA=$2
   # TODO: @Q is supproted from bash 4 - on osx the bash version is too old
-  execute_sudo "bash" "-c" "echo ${data@Q} | tee $1"
+  execute_sudo "bash" "-c" "echo ${DATA@Q} | tee $1"
 }
 
 # string formatters
@@ -148,11 +148,11 @@ else
   tty_escape() { :; }
 fi
 tty_mkbold() { tty_escape "1;$1"; }
-tty_underline="$(tty_escape "4;39")"
-tty_blue="$(tty_mkbold 34)"
-tty_red="$(tty_mkbold 31)"
-tty_bold="$(tty_mkbold 39)"
-tty_reset="$(tty_escape 0)"
+TTY_UNDERLINE="$(tty_escape "4;39")"
+TTY_BLUE="$(tty_mkbold 34)"
+TTY_RED="$(tty_mkbold 31)"
+TTY_BOLD="$(tty_mkbold 39)"
+TTY_RESET="$(tty_escape 0)"
 
 shell_join() {
   local arg
@@ -169,11 +169,11 @@ chomp() {
 }
 
 ohai() {
-  printf "${tty_blue}==>${tty_bold} %s${tty_reset}\n" "$(shell_join "$@")"
+  printf "${TTY_BLUE}==>${TTY_BOLD} %s${TTY_RESET}\n" "$(shell_join "$@")"
 }
 
 warn() {
-  printf "${tty_red}Warning${tty_reset}: %s\n" "$(chomp "$1")"
+  printf "${TTY_RED}Warning${TTY_RESET}: %s\n" "$(chomp "$1")"
 }
 
 abort() {
@@ -227,8 +227,8 @@ if ! [ -x "$(command -v jq)" ]; then
   abort "Please install jq first"
 fi
 
-if [ $action == "install" ]; then
+if [ $ACTION == "install" ]; then
   docker_plugin_install
-elif [ $action == "uninstall" ]; then
+elif [ $ACTION == "uninstall" ]; then
   docker_plugin_uninstall
 fi
