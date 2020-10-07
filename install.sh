@@ -112,8 +112,8 @@ have_sudo_access() {
     HAVE_SUDO_ACCESS="$?"
   fi
 
-  if [[ -z "${ON_LINUX-}" ]] && [[ "$HAVE_SUDO_ACCESS" -ne 0 ]]; then
-    abort "Need sudo access on macOS (e.g. the user $USER to be an Administrator)!"
+  if [[ "$HAVE_SUDO_ACCESS" -ne 0 ]]; then
+    abort "Need sudo access (e.g. the user $USER to be an Administrator)!"
   fi
 
   return "$HAVE_SUDO_ACCESS"
@@ -191,6 +191,8 @@ wait_for_user() {
     exit 1
   fi
 }
+
+have_sudo_access
 
 if [ $action == "install" ]; then
     docker_plugin_install
