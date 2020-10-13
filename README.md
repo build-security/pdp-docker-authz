@@ -9,7 +9,7 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 ### Quick install
 
 ```shell script
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:9000/data/policy/docker.authz"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:9000/data/policy/docker/authz"
 ```
 
 ### 1. Setup configuration, policy decision point address. 
@@ -20,7 +20,7 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 ```json
 {
-  "pdp_addr": "http://localhost:9000/data/policy/docker.authz",
+  "pdp_addr": "http://localhost:9000/data/policy/docker/authz",
   "allow_on_failure": false
 }
 ```
