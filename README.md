@@ -4,7 +4,7 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 `pdp-docker-authz` is an [authorization plugin](https://docs.docker.com/engine/extend/plugins_authorization/) for the Docker Engine.
 
-The project demonstrates authorization enforcement of docker api commands by sending the full api request to a third party component (for example, OPA),
+The project demonstrates authorization enforcement of docker API commands by sending the full API requests to a third party component that is compatible with OPA's API,
 which evaluates the requests and returns a simple response in the following form:
 ```
 {
@@ -126,3 +126,7 @@ dockerd[908]: {\"config_hash\":\"3baf265ade5e97e09483f1d547ff0cc952cbb4735e1b374
 ### Uninstall
 
 Uninstalling the `pdp-docker-authz` plugin is the reverse of installing. First, remove the configuration applied to the Docker daemon, not forgetting to send a `HUP` signal to the daemon's process.
+
+### Limitations
+
+Currently, the plugin is not supported on Mac.
