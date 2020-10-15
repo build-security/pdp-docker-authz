@@ -190,7 +190,11 @@ func makeInput(r authorization.Request) (interface{}, error) {
 		"AuthMethod": r.UserAuthNMethod,
 	}
 
-	return input, nil
+	wrapped := map[string]interface{}{
+		"input": input,
+	}
+
+	return wrapped, nil
 }
 
 func uuid4() (string, error) {

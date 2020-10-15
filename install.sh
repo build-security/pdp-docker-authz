@@ -24,7 +24,7 @@ fi
 JSON_CONFIG=
 ACTION="install"
 PDP_ADDR=
-DEBUG="false"
+DEBUG=""
 CONFIG="pdp_config.json"
 LOCAL_CONFIG="/etc/docker/$CONFIG"
 DOCKERD_CONFIG="/etc/docker/daemon.json"
@@ -46,7 +46,7 @@ while [ $# -ge 1 ] && [ "$1" != "" ]; do
                             ;;
     -u | --uninstall )      ACTION="uninstall"
                             ;;
-    -d | --debug )          DEBUG="true"
+    -d | --debug )          DEBUG="-debug"
                             ;;
     -h | --help )           usage
                             exit
@@ -59,7 +59,7 @@ done
 
 docker_plugin_install() {
   pdp_config
-  execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${CONFIG} -debug ${DEBUG}"
+  execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${CONFIG} ${DEBUG}"
   docker_plugin_config
   docker_config_restart
 }
