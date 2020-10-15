@@ -4,8 +4,12 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 `pdp-docker-authz` is an [authorization plugin](https://docs.docker.com/engine/extend/plugins_authorization/) for the Docker Engine.
 
-The project demonstrates authorization enforcement of docker API commands by sending the full API requests to a third party component that is compatible with OPA's API,
-which evaluates the requests and returns a simple response in the following form:
+The project demonstrates authorization enforcement of Docker API commands by sending the full API requests to a third party component - a Policy Decision Point (PDP) - that is compatible with OPA's API.
+
+Requests sent from Docker engine to the Docker daemon are described [in the Docker docs](https://docs.docker.com/engine/api/latest/).
+The requests are evaluated by the PDP which sends a response to the plugin.
+
+The plugin then responds to the Docker daemon, with a response in the following structure:
 ```
 {
    "Allow":              "Determined whether the user is allowed or not",
@@ -13,13 +17,13 @@ which evaluates the requests and returns a simple response in the following form
    "Err":                "The error message if things go wrong"
 }
 ```
-apart from installing and configuring this plugin, you will have to set up the actual server that will evaluate and allow/deny the requests.
+Apart from installing and configuring this plugin, you will have to set up the actual server that will evaluate and allow/deny the requests.
 
 ## Usage
 
 ### Prerequisites
 
-1. a Linux machine running docker daemon
+1. a Linux machine running Docker daemon
 2. an Open Policy Agent
 
 ### Quick Example OPA setup
@@ -127,6 +131,7 @@ dockerd[908]: {\"config_hash\":\"3baf265ade5e97e09483f1d547ff0cc952cbb4735e1b374
 
 Uninstalling the `pdp-docker-authz` plugin is the reverse of installing. First, remove the configuration applied to the Docker daemon, not forgetting to send a `HUP` signal to the daemon's process.
 
-### Limitations
+### Limitations & Future Development
 
-Currently, the plugin is not supported on Mac.
+1. Currently, the plugin is not supported on Mac.
+2. Docker authorization plugin infrastructure also support authorization of the response returned from Docker daemon to the client. Currently, this plugin only authorizes requests from the client to the Docker daemon (and not the responses).
