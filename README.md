@@ -57,7 +57,7 @@ curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/exampl
 ### Quick Plugin install
 
 ```shell script
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/<branch_name>/install.sh)" -s -p "http://localhost:9000/data/policy/docker/authz"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:9000/v1/data/policy/docker/authz"
 ```
 
 ### Manual Plugin install
