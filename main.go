@@ -87,7 +87,10 @@ func (p DockerAuthZPlugin) evaluate(_ context.Context, r authorization.Request) 
 	body, err := json.Marshal(input)
 
 	allowed, err := func() (bool, error) {
-		resp, err := http.Post(cfg.PdpAddr, "application/json", bytes.NewBuffer(body))
+		client := http.Client{
+			Timeout: 3 * time.Second,
+		}
+		resp, err := client.Post(cfg.PdpAddr, "application/json", bytes.NewBuffer(body))
 
 		if err != nil {
 			return cfg.AllowOnFailure, err
@@ -187,7 +190,11 @@ func makeInput(r authorization.Request) (interface{}, error) {
 		"AuthMethod": r.UserAuthNMethod,
 	}
 
-	return input, nil
+	wrapped := map[string]interface{}{
+		"input": input,
+	}
+
+	return wrapped, nil
 }
 
 func uuid4() (string, error) {

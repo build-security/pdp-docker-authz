@@ -4,9 +4,68 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 `pdp-docker-authz` is an [authorization plugin](https://docs.docker.com/engine/extend/plugins_authorization/) for the Docker Engine.
 
+The project demonstrates authorization enforcement of Docker API commands by sending the full API requests to a third party component - a Policy Decision Point (PDP) - that is compatible with OPA's API.
+
+Requests sent from Docker engine to the Docker daemon are described [in the Docker docs](https://docs.docker.com/engine/api/latest/).
+The requests are evaluated by the PDP which sends a response to the plugin.
+
+The plugin then responds to the Docker daemon, with a response in the following structure:
+```
+{
+   "Allow":              "Determined whether the user is allowed or not",
+   "Msg":                "The authorization message",
+   "Err":                "The error message if things go wrong"
+}
+```
+Apart from installing and configuring this plugin, you will have to set up the actual server that will evaluate and allow/deny the requests.
+
 ## Usage
 
-###1. Setup configuration, policy decision point address. 
+### Prerequisites
+
+1. a Linux machine running Docker daemon
+2. an Open Policy Agent
+
+### Quick Example OPA setup
+
+1. run OPA:
+```
+docker run -p 9000:9000 openpolicyagent/opa run --server --addr :9000
+```
+2. create a simple policy that will only allow ```docker run``` using ```hello-world``` image:
+```
+echo 'package policy.docker.authz
+
+default allow = false
+
+allow {
+        input.Body.Image == "hello-world"
+}
+
+allow {
+        input.Body == null
+}' > example.rego
+
+```
+3. configure OPA to use the policy
+```
+curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/example
+```
+4. preform sanity check
+```
+❯ curl -X POST -H "Content-Type: application/json" --data '{"input" :{"Body": {"Image": "hello-world"}}}'  http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":true}}%
+❯ curl -X POST -H "Content-Type: application/json" --data '{"input" :{"Body": {"Image": "bye-world"}}}'  http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":false}}%
+```
+### Quick Plugin install
+
+```shell script
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:9000/v1/data/policy/docker/authz"
+```
+
+### Manual Plugin install
+#### 1. Setup configuration, policy decision point address. 
 
 `mkdir -p /etc/docker`
 
@@ -14,11 +73,11 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 ```json
 {
-  "pdp_addr": "http://localhost:9000/data/policy/docker.authz",
+  "pdp_addr": "http://localhost:9000/v1/data/policy/docker/authz",
   "allow_on_failure": false
 }
 ```
-###2. Install the pdp-docker-authz plugin.
+#### 2. Install the pdp-docker-authz plugin.
 
 `docker plugin install buildsecurity/pdp-docker-authz:v0.1 pdp-args="-config-file /pdp/pdp_config.json -debug false"`
 
@@ -36,7 +95,7 @@ Signal the Docker daemon to reload the configuration file.
 
 `kill -HUP $(pidof dockerd)`
 
-### 3. Run a simple Docker command to make sure everything is still working.
+#### 3. Run a simple Docker command to make sure everything is still working.
 `docker ps`
 
 If setup done correctly, the command should exit successfully. You can expect to see log messages from PDP and the plugin.
@@ -71,3 +130,8 @@ dockerd[908]: {\"config_hash\":\"3baf265ade5e97e09483f1d547ff0cc952cbb4735e1b374
 ### Uninstall
 
 Uninstalling the `pdp-docker-authz` plugin is the reverse of installing. First, remove the configuration applied to the Docker daemon, not forgetting to send a `HUP` signal to the daemon's process.
+
+### Limitations & Future Development
+
+1. Currently, the plugin is not supported on Mac.
+2. Docker authorization plugin infrastructure also support authorization of the response returned from Docker daemon to the client. Currently, this plugin only authorizes requests from the client to the Docker daemon (and not the responses).
