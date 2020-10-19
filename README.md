@@ -35,17 +35,20 @@ docker run -p 9000:9000 openpolicyagent/opa run --server --addr :9000
 2. create a simple policy that will only allow ```docker run``` using ```hello-world``` image:
 ```
 echo 'package policy.docker.authz
-
 default allow = false
 
+is_docker_run {
+        endswith(input.Path, "/containers/create")
+}
+
 allow {
+        is_docker_run
         input.Body.Image == "hello-world"
 }
 
 allow {
-        input.Body == null
+        not is_docker_run
 }' > example.rego
-
 ```
 3. configure OPA to use the policy
 ```
@@ -53,10 +56,14 @@ curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/exampl
 ```
 4. preform sanity check
 ```
-❯ curl -X POST -H "Content-Type: application/json" --data '{"input" :{"Body": {"Image": "hello-world"}}}'  http://localhost:9000/v1/data/policy/docker/authz
-{"result":{"allow":true}}%
-❯ curl -X POST -H "Content-Type: application/json" --data '{"input" :{"Body": {"Image": "bye-world"}}}'  http://localhost:9000/v1/data/policy/docker/authz
-{"result":{"allow":false}}%
+>>> curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/some/other"}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":true}}
+>>> curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create"}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":false,"is_docker_run":true}}
+>>> curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "hello-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":true,"is_docker_run":true}}
+>>> curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "bye-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":false,"is_docker_run":true}}
 ```
 ### Quick Plugin install
 
