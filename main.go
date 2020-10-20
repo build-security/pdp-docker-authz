@@ -108,25 +108,17 @@ func (p DockerAuthZPlugin) evaluate(_ context.Context, r authorization.Request) 
 		}
 
 		log.Println("Response", bodyJSON)
-		var allowed = false
 
-		for i := range bodyJSON {
-			nested, ok := bodyJSON[i].(map[string]interface{})
-
-			if !ok {
-				continue
-			}
-
-			allowed2, ok1 := nested["allow"].(bool)
-
-			if !ok1 {
-				continue
-			}
-
-			allowed = allowed2
+		result, ok := bodyJSON["result"].(map[string]interface{})
+		if !ok {
+			return false, nil
+		}
+		allow, ok := result["allow"].(bool)
+		if !ok {
+			return false, nil
 		}
 
-		return allowed, nil
+		return allow, nil
 	}()
 
 	decisionId, _ := uuid4()
