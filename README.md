@@ -30,44 +30,53 @@ Apart from installing and configuring this plugin, you will have to set up the a
 
 1. run OPA:
 ```
-docker run -p 9000:9000 openpolicyagent/opa run --server --addr :9000
+$ docker run -p 9000:9000 openpolicyagent/opa run --server --addr :9000
 ```
 2. create a simple policy that will only allow ```docker run``` using ```hello-world``` image:
 ```
-echo 'package policy.docker.authz
-
+$ echo 'package policy.docker.authz
 default allow = false
 
+is_docker_run_cmd {
+        endswith(input.Path, "/containers/create")
+}
+
 allow {
+        is_docker_run_cmd
         input.Body.Image == "hello-world"
 }
 
 allow {
-        input.Body == null
+        not is_docker_run_cmd
 }' > example.rego
-
 ```
 3. configure OPA to use the policy
 ```
-curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/example
+$ curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/example
 ```
 4. preform sanity check
 ```
-❯ curl -X POST -H "Content-Type: application/json" --data '{"input" :{"Body": {"Image": "hello-world"}}}'  http://localhost:9000/v1/data/policy/docker/authz
-{"result":{"allow":true}}%
-❯ curl -X POST -H "Content-Type: application/json" --data '{"input" :{"Body": {"Image": "bye-world"}}}'  http://localhost:9000/v1/data/policy/docker/authz
-{"result":{"allow":false}}%
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/some/other"}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":true}}
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create"}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":false,"is_docker_run_cmd":true}}
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "hello-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":true,"is_docker_run_cmd":true}}
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "bye-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
+{"result":{"allow":false,"is_docker_run_cmd":true}}
 ```
 ### Quick Plugin install
 
 ```shell script
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:9000/v1/data/policy/docker/authz"
+$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:9000/v1/data/policy/docker/authz"
 ```
 
 ### Manual Plugin install
 #### 1. Setup configuration, policy decision point address. 
 
-`mkdir -p /etc/docker`
+```
+$ mkdir -p /etc/docker
+```
 
 **/etc/docker/pdp_config.json**
 
@@ -79,12 +88,14 @@ curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/exampl
 ```
 #### 2. Install the pdp-docker-authz plugin.
 
-`docker plugin install buildsecurity/pdp-docker-authz:v0.1 pdp-args="-config-file /pdp/pdp_config.json -debug false"`
+```
+$ docker plugin install buildsecurity/pdp-docker-authz:v0.1 pdp-args="-config-file /pdp/pdp_config.json -debug false"
+```
 
 You need to configure the Docker daemon to use the plugin for authorization.
 
 ```shell script
-cat > /etc/docker/daemon.json <<EOF
+$ cat > /etc/docker/daemon.json <<EOF
 {
     "authorization-plugins": ["buildsecurity/pdp-docker-authz:v0.1"]
 }
@@ -93,10 +104,14 @@ EOF
 
 Signal the Docker daemon to reload the configuration file.
 
-`kill -HUP $(pidof dockerd)`
+```
+$ kill -HUP $(pidof dockerd)
+```
 
 #### 3. Run a simple Docker command to make sure everything is still working.
-`docker ps`
+```
+$ docker ps
+```
 
 If setup done correctly, the command should exit successfully. You can expect to see log messages from PDP and the plugin.
 
@@ -119,7 +134,9 @@ If the plugin installed without a configuration file, all authorization requests
 
 The activity describing the interaction between the Docker daemon and the authorization plugin, and the authorization decisions made by PDP, can be found in the daemon's logs. Their [location](https://docs.docker.com/config/daemon/#read-the-logs) is dependent on the host operating system configuration.
 
-`journalctl -u docker -f`
+```
+$ journalctl -u docker -f
+```
 
 ```
 dockerd[908]: map[data.policy.n506c5e8ac58e4ac9bd7145f2184ffffc:map[allow:true] decision_id:20a09f61-de5a-47f9-989d-95db8455b0c7]" plugin=8b1b9db827de8710bd95f79c0052a46e106dd7e058c84e8f31a5f4e7d8d0dd11
