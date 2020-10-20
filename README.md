@@ -4,6 +4,10 @@ This project is based on [opa-docker-authz](https://github.com/open-policy-agent
 
 `pdp-docker-authz` is an [authorization plugin](https://docs.docker.com/engine/extend/plugins_authorization/) for the Docker Engine.
 
+The sequence diagrams below depict an allow and deny Docker authorization plugin flow:
+![alt text](https://docs.docker.com/engine/extend/images/authz_allow.png)
+![alt text](https://docs.docker.com/engine/extend/images/authz_deny.png)
+
 The project demonstrates authorization enforcement of Docker API commands by sending the full API requests to a third party component - a Policy Decision Point (PDP) - that is compatible with OPA's API.
 
 Requests sent from Docker engine to the Docker daemon are described [in the Docker docs](https://docs.docker.com/engine/api/latest/).
@@ -58,10 +62,13 @@ $ curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/exam
 ```
 $ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/some/other"}}' http://localhost:9000/v1/data/policy/docker/authz
 {"result":{"allow":true}}
+
 $ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create"}}' http://localhost:9000/v1/data/policy/docker/authz
 {"result":{"allow":false,"is_docker_run_cmd":true}}
+
 $ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "hello-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
 {"result":{"allow":true,"is_docker_run_cmd":true}}
+
 $ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "bye-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
 {"result":{"allow":false,"is_docker_run_cmd":true}}
 ```
