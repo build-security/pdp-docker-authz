@@ -126,7 +126,7 @@ func (p DockerAuthZPlugin) evaluate(_ context.Context, r authorization.Request) 
 
 		messages, ok := result["messages"].([]string)
 		if !ok {
-			return false, nil, nil
+			messages = make([]string, 0)
 		}
 
 		return allow, messages, nil

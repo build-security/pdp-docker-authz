@@ -1,6 +1,6 @@
 .PHONY: all build
 
-VERSION := v0.1
+VERSION := v0.4
 GO_VERSION := 1.14.7
 REPO := buildsecurity/pdp-docker-authz
 
