@@ -34,7 +34,7 @@ Apart from installing and configuring this plugin, you will have to set up the a
 
 1. run OPA:
 ```
-$ docker run -p 9000:9000 openpolicyagent/opa run --server --addr :9000
+$ docker run -p 8181:8181 openpolicyagent/opa run --server --addr :8181
 ```
 2. create a simple policy that will only allow ```docker run``` using ```hello-world``` image:
 ```
@@ -56,26 +56,26 @@ allow {
 ```
 3. configure OPA to use the policy
 ```
-$ curl -X PUT --data-binary @example.rego http://localhost:9000/v1/policies/example
+$ curl -X PUT --data-binary @example.rego http://localhost:8181/v1/policies/example
 ```
 4. preform sanity check
 ```
-$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/some/other"}}' http://localhost:9000/v1/data/policy/docker/authz
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/some/other"}}' http://localhost:8181/v1/data/docker/authz
 {"result":{"allow":true}}
 
-$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create"}}' http://localhost:9000/v1/data/policy/docker/authz
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create"}}' http://localhost:8181/v1/data/docker/authz
 {"result":{"allow":false,"is_docker_run_cmd":true}}
 
-$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "hello-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "hello-world"}}}' http://localhost:8181/v1/data/docker/authz
 {"result":{"allow":true,"is_docker_run_cmd":true}}
 
-$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "bye-world"}}}' http://localhost:9000/v1/data/policy/docker/authz
+$ curl -X POST -H "Content-Type: application/json" --data '{"input":{"Path":"/v1.40/containers/create", "Body": {"Image": "bye-world"}}}' http://localhost:8181/v1/data/docker/authz
 {"result":{"allow":false,"is_docker_run_cmd":true}}
 ```
 ### Quick Plugin install
 
 ```shell script
-$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:9000/v1/data/policy/docker/authz"
+$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/build-security/pdp-docker-authz/master/install.sh)" -s -p "http://localhost:8181/v1/data/docker/authz"
 ```
 
 ### Manual Plugin install
@@ -89,14 +89,14 @@ $ mkdir -p /etc/docker
 
 ```json
 {
-  "pdp_addr": "http://localhost:9000/v1/data/policy/docker/authz",
+  "pdp_addr": "http://localhost:8181/v1/data/docker/authz",
   "allow_on_failure": false
 }
 ```
 #### 2. Install the pdp-docker-authz plugin.
 
 ```
-$ docker plugin install buildsecurity/pdp-docker-authz:v0.1 pdp-args="-config-file /pdp/pdp_config.json -debug false"
+$ docker plugin install buildsecurity/pdp-docker-authz:v0.4 pdp-args="-config-file /pdp/pdp_config.json -debug false"
 ```
 
 You need to configure the Docker daemon to use the plugin for authorization.
@@ -104,7 +104,7 @@ You need to configure the Docker daemon to use the plugin for authorization.
 ```shell script
 $ cat > /etc/docker/daemon.json <<EOF
 {
-    "authorization-plugins": ["buildsecurity/pdp-docker-authz:v0.1"]
+    "authorization-plugins": ["buildsecurity/pdp-docker-authz:v0.4"]
 }
 EOF
 ```
@@ -148,7 +148,7 @@ $ journalctl -u docker -f
 ```
 dockerd[908]: map[data.policy.n506c5e8ac58e4ac9bd7145f2184ffffc:map[allow:true] decision_id:20a09f61-de5a-47f9-989d-95db8455b0c7]" plugin=8b1b9db827de8710bd95f79c0052a46e106dd7e058c84e8f31a5f4e7d8d0dd11
 dockerd[908]: Returning PDP decision: true" plugin=8b1b9db827de8710bd95f79c0052a46e106dd7e058c84e8f31a5f4e7d8d0dd11
-dockerd[908]: {\"config_hash\":\"3baf265ade5e97e09483f1d547ff0cc952cbb4735e1b374dc8e588b547587587\",\"decision_id\":\"a14f6f7b-11a5-462c-9933-16d9d90a80fb\",\"input\":{\"AuthMethod\":\"\",\"Body\":null,\"Headers\":{\"Content-Length\":\"0\",\"Content-Type\":\"text/plain\",\"User-Agent\":\"Docker-Client/19.03.13 (linux)\"},\"Method\":\"POST\",\"Path\":\"/v1.40/containers/7b9fabea0dd7b36a43a5db3073aaf5c340a38fb905e54de4bb072886498c7c5f/start\",\"PathArr\":[\"\",\"v1.40\",\"containers\",\"7b9fabea0dd7b36a43a5db3073aaf5c340a38fb905e54de4bb072886498c7c5f\",\"start\"],\"PathPlain\":\"/v1.40/containers/7b9fabea0dd7b36a43a5db3073aaf5c340a38fb905e54de4bb072886498c7c5f/start\",\"Query\":{},\"User\":\"\"},\"labels\":{\"app\":\"pdp-docker-authz\",\"id\":\"2caae6de-792b-4d9b-8f1f-7ca1edb9430c\",\"plugin_version\":\"v0.1\"},\"result\":true,\"timestamp\":\"2020-09-30T22:07:07.906824127Z\"}" plugin=8b1b9db827de8710bd95f79c0052a46e106dd7e058c84e8f31a5f4e7d8d0dd11
+dockerd[908]: {\"config_hash\":\"3baf265ade5e97e09483f1d547ff0cc952cbb4735e1b374dc8e588b547587587\",\"decision_id\":\"a14f6f7b-11a5-462c-9933-16d9d90a80fb\",\"input\":{\"AuthMethod\":\"\",\"Body\":null,\"Headers\":{\"Content-Length\":\"0\",\"Content-Type\":\"text/plain\",\"User-Agent\":\"Docker-Client/19.03.13 (linux)\"},\"Method\":\"POST\",\"Path\":\"/v1.40/containers/7b9fabea0dd7b36a43a5db3073aaf5c340a38fb905e54de4bb072886498c7c5f/start\",\"PathArr\":[\"\",\"v1.40\",\"containers\",\"7b9fabea0dd7b36a43a5db3073aaf5c340a38fb905e54de4bb072886498c7c5f\",\"start\"],\"PathPlain\":\"/v1.40/containers/7b9fabea0dd7b36a43a5db3073aaf5c340a38fb905e54de4bb072886498c7c5f/start\",\"Query\":{},\"User\":\"\"},\"labels\":{\"app\":\"pdp-docker-authz\",\"id\":\"2caae6de-792b-4d9b-8f1f-7ca1edb9430c\",\"plugin_version\":\"v0.4\"},\"result\":true,\"timestamp\":\"2020-09-30T22:07:07.906824127Z\"}" plugin=8b1b9db827de8710bd95f79c0052a46e106dd7e058c84e8f31a5f4e7d8d0dd11
 ```
 
 ### Uninstall

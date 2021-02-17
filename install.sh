@@ -28,6 +28,7 @@ DEBUG=""
 CONFIG="pdp_config.json"
 LOCAL_CONFIG="/etc/docker/$CONFIG"
 DOCKERD_CONFIG="/etc/docker/daemon.json"
+PLUGIN_VERSION="v0.4"
 
 # TODO: support osx
 
@@ -59,7 +60,7 @@ done
 
 docker_plugin_install() {
   pdp_config
-  execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:v0.1" "pdp-args=-config-file ${CONFIG} ${DEBUG}"
+  execute "docker" "plugin" "install" "buildsecurity/pdp-docker-authz:${PLUGIN_VERSION}" "pdp-args=-config-file ${CONFIG} ${DEBUG}"
   docker_plugin_config
   docker_config_restart
 }
@@ -80,7 +81,7 @@ docker_plugin_config() {
     write_file $DOCKERD_CONFIG "{}"
   fi
 
-  JSON_CONFIG=$(jq '."authorization-plugins" += ["buildsecurity/pdp-docker-authz:v0.1"]' $DOCKERD_CONFIG)
+  JSON_CONFIG=$(jq '."authorization-plugins" += ["buildsecurity/pdp-docker-authz:'${PLUGIN_VERSION}'"]' $DOCKERD_CONFIG)
 
   if [ $? -ne 0 ]; then
     abort "jq failure"
@@ -92,11 +93,11 @@ docker_plugin_config() {
 docker_plugin_uninstall() {
   docker_plugin_remove_config
   docker_config_restart
-  execute "docker" "plugin" "rm" "-f" "buildsecurity/pdp-docker-authz:v0.1"
+  execute "docker" "plugin" "rm" "-f" "buildsecurity/pdp-docker-authz:${PLUGIN_VERSION}"
 }
 
 docker_plugin_remove_config() {
-  JSON_CONFIG=$(jq 'del(."authorization-plugins"[] | select(. == "buildsecurity/pdp-docker-authz:v0.1"))' $DOCKERD_CONFIG)
+  JSON_CONFIG=$(jq 'del(."authorization-plugins"[] | select(. | startswith("buildsecurity/pdp-docker-authz")))' $DOCKERD_CONFIG)
 
   if [ $? -ne 0 ]; then
     abort "jq failure"
