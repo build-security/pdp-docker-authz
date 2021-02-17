@@ -41,15 +41,24 @@ type PluginConfiguration struct {
 	AllowOnFailure bool   `json:"allow_on_failure"`
 }
 
+type AuthzResult struct {
+	Allow    bool     `json:"allow"`
+	Messages []string `json:"messages"`
+}
+
+type ResponseBody struct {
+	Result AuthzResult `json:"result"`
+}
+
 // AuthZReq is called when the Docker daemon receives an API request. AuthZReq
 // returns an authorization.Response that indicates whether the request should
 // be allowed or denied.
 func (p DockerAuthZPlugin) AuthZReq(r authorization.Request) authorization.Response {
 	ctx := context.Background()
 
-	allowed, err := p.evaluate(ctx, r)
+	authzResult, err := p.evaluate(ctx, r)
 
-	if allowed {
+	if authzResult.Allow {
 		return authorization.Response{Allow: true}
 	} else if err != nil {
 		if p.debug {
@@ -59,7 +68,8 @@ func (p DockerAuthZPlugin) AuthZReq(r authorization.Request) authorization.Respo
 		return authorization.Response{Err: err.Error()}
 	}
 
-	return authorization.Response{Msg: "request rejected by administrative policy"}
+	return authorization.Response{Msg: "request rejected by administrative policy: " +
+		strings.Join(authzResult.Messages, " ,")}
 }
 
 // AuthZRes is called before the Docker daemon returns an API response. All responses
@@ -68,57 +78,48 @@ func (p DockerAuthZPlugin) AuthZRes(_ authorization.Request) authorization.Respo
 	return authorization.Response{Allow: true}
 }
 
-func (p DockerAuthZPlugin) evaluate(_ context.Context, r authorization.Request) (bool, error) {
+func (p DockerAuthZPlugin) evaluate(_ context.Context, r authorization.Request) (AuthzResult, error) {
 	bs, err := ioutil.ReadFile(p.configFile)
 	if err != nil {
-		return false, err
+		return AuthzResult{Allow: false}, err
 	}
 
 	var cfg PluginConfiguration
 	if err = json.Unmarshal(bs, &cfg); err != nil {
-		return false, err
+		return AuthzResult{Allow: false}, err
 	}
 
 	input, err := makeInput(r)
 	if err != nil {
-		return cfg.AllowOnFailure, err
+		return AuthzResult{Allow: cfg.AllowOnFailure}, err
 	}
 
 	body, err := json.Marshal(input)
 
-	allowed, err := func() (bool, error) {
+	allowed, messages, err := func() (bool, []string, error) {
 		client := http.Client{
 			Timeout: 3 * time.Second,
 		}
 		resp, err := client.Post(cfg.PdpAddr, "application/json", bytes.NewBuffer(body))
 
 		if err != nil {
-			return cfg.AllowOnFailure, err
+			return cfg.AllowOnFailure, nil, err
 		}
 
 		defer dclose(resp.Body)
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return cfg.AllowOnFailure, err
+			return cfg.AllowOnFailure, nil, err
 		}
 
-		var bodyJSON map[string]interface{}
+		var bodyJSON ResponseBody
 		if err = json.Unmarshal(body, &bodyJSON); err != nil {
-			return cfg.AllowOnFailure, err
+			return cfg.AllowOnFailure, nil, err
 		}
 
 		log.Println("Response", bodyJSON)
 
-		result, ok := bodyJSON["result"].(map[string]interface{})
-		if !ok {
-			return false, nil
-		}
-		allow, ok := result["allow"].(bool)
-		if !ok {
-			return false, nil
-		}
-
-		return allow, nil
+		return bodyJSON.Result.Allow, bodyJSON.Result.Messages, nil
 	}()
 
 	decisionId, _ := uuid4()
@@ -146,7 +147,7 @@ func (p DockerAuthZPlugin) evaluate(_ context.Context, r authorization.Request) 
 		log.Println(string(dl))
 	}
 
-	return allowed, err
+	return AuthzResult{Allow: allowed, Messages: messages}, nil
 }
 
 func dclose(c io.Closer) {
